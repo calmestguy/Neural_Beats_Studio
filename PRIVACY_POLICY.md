@@ -62,6 +62,9 @@ You have the right to:
 
 ## 7. Data Deletion
 
+For detailed step-by-step data deletion instructions, please visit:  
+**https://github.com/calmestguy/Neural_Beats_Studio/blob/master/DATA_DELETION.md**
+
 ### 7.1 How to Delete Your Data
 
 **Local Files:**
