@@ -1,0 +1,32 @@
+# YouTube API credentials (GÜVENLİK - ASLA PAYLAŞMAYIN!)
+credentials.json
+token.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Output files (opsiyonel - eğer Git'e eklemek istemiyorsanız)
+# output/
+# *.mp4
+# *.wav
+# *.mp3
+
