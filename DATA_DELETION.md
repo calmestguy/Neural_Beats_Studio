@@ -2,6 +2,10 @@
 
 **Last Updated:** December 26, 2024
 
+## Important Notice
+
+**Neural Beats Studio is a desktop application that processes all data locally on your device. We do NOT store your data on our servers. All data deletion is handled locally by you, the user.**
+
 ## How to Delete Your Data
 
 Neural Beats Studio respects your privacy and provides you with full control over your data. All data is stored locally on your device, and you can delete it at any time.
@@ -91,6 +95,25 @@ After deletion, you can verify:
 - ✅ OAuth tokens are revoked (check platform settings)
 - ✅ No `token.json` or `credentials.json` files remain
 
+## For Facebook/Instagram Users
+
+If you have connected your Facebook or Instagram account to Neural Beats Studio:
+
+1. **Revoke App Access:**
+   - Go to: https://www.facebook.com/settings?tab=applications
+   - Find "Neural Beats Studio" app
+   - Click "Remove" or "Delete App"
+
+2. **Local Data:**
+   - All data is stored locally on your device
+   - Delete `token.json` file to remove OAuth tokens
+   - Delete `output/` directory to remove generated content
+
+3. **No Server Data:**
+   - We do NOT store your data on our servers
+   - No data deletion request is needed from our side
+   - All data is on your local device
+
 ## Questions?
 
 If you have questions about data deletion or need assistance, please contact us:
@@ -100,5 +123,5 @@ If you have questions about data deletion or need assistance, please contact us:
 
 ---
 
-**Important:** This application processes all data locally on your device. We do not store your data on our servers. All deletion is handled locally by you, the user.
+**Important:** This application processes all data locally on your device. We do not store your data on our servers. All deletion is handled locally by you, the user. Since we don't store user data on servers, there is no server-side data to delete.
 
