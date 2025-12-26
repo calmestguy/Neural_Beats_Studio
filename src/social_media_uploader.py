@@ -52,7 +52,7 @@ try:
     src_path = Path(__file__).parent
     if str(src_path) not in sys.path:
         sys.path.insert(0, str(src_path))
-    from youtube_upload import authenticate_youtube, get_music_metadata, upload_video_to_youtube, is_video_already_uploaded
+    from youtube_upload import authenticate_youtube, get_music_metadata, upload_video_to_youtube, is_video_already_uploaded, get_uploaded_videos
 except ImportError as e:
     print(f"[WARNING] YouTube upload module not found: {e}")
 
@@ -77,10 +77,10 @@ except ImportError as e:
     create_youtube_video = None
 
 class ModernButton(tk.Canvas):
-    """Futuristik buton widget'ı"""
+    """Futuristik buton widget'ı - Geliştirilmiş versiyon"""
     def __init__(self, parent, text, command, width=200, height=40, 
                  bg_color=THEME['accent_primary'], hover_color=THEME['accent_secondary'],
-                 text_color=THEME['text_primary'], font_size=11):
+                 text_color=THEME['text_primary'], font_size=11, icon=None):
         super().__init__(parent, width=width, height=height, 
                         bg=THEME['bg_secondary'], highlightthickness=0)
         self.command = command
@@ -88,13 +88,26 @@ class ModernButton(tk.Canvas):
         self.hover_color = hover_color
         self.text_color = text_color
         self.is_hovered = False
+        self.is_pressed = False
         
-        # Buton arka planı
-        self.create_rectangle(2, 2, width-2, height-2, 
+        # Buton arka planı (rounded corners efekti için)
+        self.create_rectangle(3, 3, width-3, height-3, 
                              fill=bg_color, outline=bg_color, width=0, tags='bg')
         
+        # Glow efekti (hover için)
+        self.create_rectangle(1, 1, width-1, height-1, 
+                             fill='', outline=bg_color, width=1, tags='glow', state='hidden')
+        
         # Buton metni
-        self.create_text(width//2, height//2, text=text, 
+        text_x = width//2
+        if icon:
+            # Icon varsa metni sağa kaydır
+            text_x = width//2 + 15
+            self.create_text(width//2 - 40, height//2, text=icon, 
+                           fill=text_color, font=('Segoe UI', font_size+2),
+                           tags='icon')
+        
+        self.create_text(text_x, height//2, text=text, 
                         fill=text_color, font=('Segoe UI', font_size, 'bold'),
                         tags='text')
         
@@ -103,27 +116,42 @@ class ModernButton(tk.Canvas):
         self.bind('<Leave>', self.on_leave)
         self.bind('<Button-1>', self.on_click)
         self.bind('<ButtonRelease-1>', self.on_release)
+        self.bind('<Motion>', self.on_motion)
     
     def on_enter(self, event):
         self.is_hovered = True
-        self.itemconfig('bg', fill=self.hover_color, outline=self.hover_color)
+        if not self.is_pressed:
+            self.itemconfig('bg', fill=self.hover_color, outline=self.hover_color)
+            self.itemconfig('glow', state='normal', outline=self.hover_color)
         self.config(cursor='hand2')
     
     def on_leave(self, event):
         self.is_hovered = False
+        self.is_pressed = False
         self.itemconfig('bg', fill=self.bg_color, outline=self.bg_color)
+        self.itemconfig('glow', state='hidden')
         self.config(cursor='')
     
     def on_click(self, event):
-        self.itemconfig('bg', fill=THEME['bg_tertiary'])
+        self.is_pressed = True
+        # Press efekti - daha koyu renk
+        press_color = THEME['bg_tertiary']
+        self.itemconfig('bg', fill=press_color, outline=press_color)
     
     def on_release(self, event):
+        self.is_pressed = False
         if self.is_hovered:
-            self.itemconfig('bg', fill=self.hover_color)
+            self.itemconfig('bg', fill=self.hover_color, outline=self.hover_color)
+            self.itemconfig('glow', state='normal', outline=self.hover_color)
         else:
-            self.itemconfig('bg', fill=self.bg_color)
+            self.itemconfig('bg', fill=self.bg_color, outline=self.bg_color)
+            self.itemconfig('glow', state='hidden')
         if self.command:
             self.command()
+    
+    def on_motion(self, event):
+        # Hover animasyonu için
+        pass
 
 class SocialMediaUploaderApp:
     def __init__(self, root):
@@ -282,8 +310,9 @@ class SocialMediaUploaderApp:
                                          fg=THEME['text_muted'],
                                          font=('Segoe UI', 9))
         self.music_path_label.pack(side=tk.LEFT, padx=10, expand=True, fill=tk.X)
-        ModernButton(music_card, "Seç", self.select_music_file, 
-                   width=80, height=32, bg_color=THEME['accent_primary'],
+        ModernButton(music_card, "📂 Seç", self.select_music_file, 
+                   width=100, height=36, font_size=10,
+                   bg_color=THEME['accent_primary'],
                    hover_color=THEME['accent_secondary']).pack(side=tk.RIGHT, padx=15)
         
         # Görsel dosyası - Modern card
@@ -298,8 +327,9 @@ class SocialMediaUploaderApp:
                                          fg=THEME['text_muted'],
                                          font=('Segoe UI', 9))
         self.image_path_label.pack(side=tk.LEFT, padx=10, expand=True, fill=tk.X)
-        ModernButton(image_card, "Seç", self.select_image_file, 
-                   width=80, height=32, bg_color=THEME['accent_primary'],
+        ModernButton(image_card, "📂 Seç", self.select_image_file,
+                   width=100, height=36, font_size=10,
+                   bg_color=THEME['accent_primary'],
                    hover_color=THEME['accent_secondary']).pack(side=tk.RIGHT, padx=15)
         
         # Video dosyası - Modern card
@@ -314,8 +344,9 @@ class SocialMediaUploaderApp:
                                          fg=THEME['text_muted'],
                                          font=('Segoe UI', 9))
         self.video_path_label.pack(side=tk.LEFT, padx=10, expand=True, fill=tk.X)
-        ModernButton(video_card, "Seç", self.select_video_file, 
-                   width=80, height=32, bg_color=THEME['accent_primary'],
+        ModernButton(video_card, "📂 Seç", self.select_video_file, 
+                   width=100, height=36, font_size=10,
+                   bg_color=THEME['accent_primary'],
                    hover_color=THEME['accent_secondary']).pack(side=tk.RIGHT, padx=15)
         
         # Metadata bölümü - Modern Panel
@@ -398,10 +429,13 @@ class SocialMediaUploaderApp:
         platforms_row2 = tk.Frame(platform_container, bg=THEME['bg_secondary'])
         platforms_row2.pack(fill=tk.X, padx=15, pady=5)
         
-        ttk.Checkbutton(platforms_row2, text="🎵 TikTok", 
-                       variable=self.tiktok_var, style='Dark.TCheckbutton').pack(side=tk.LEFT, padx=15)
-        ttk.Checkbutton(platforms_row2, text="🎧 Spotify", 
-                       variable=self.spotify_var, style='Dark.TCheckbutton').pack(side=tk.LEFT, padx=15)
+        # TikTok ve Spotify şimdilik devre dışı (ulaşım yok)
+        tiktok_check = ttk.Checkbutton(platforms_row2, text="🎵 TikTok (Yakında)", 
+                       variable=self.tiktok_var, style='Dark.TCheckbutton', state='disabled')
+        tiktok_check.pack(side=tk.LEFT, padx=15)
+        spotify_check = ttk.Checkbutton(platforms_row2, text="🎧 Spotify (Yakında)", 
+                       variable=self.spotify_var, style='Dark.TCheckbutton', state='disabled')
+        spotify_check.pack(side=tk.LEFT, padx=15)
         
         # Ayarlar - Modern Panel
         settings_panel = tk.Canvas(main_frame, bg=THEME['bg_secondary'], 
@@ -523,24 +557,46 @@ class SocialMediaUploaderApp:
         button_container = tk.Frame(button_panel, bg=THEME['bg_primary'])
         button_container.pack()
         
-        ModernButton(button_container, "📥 Metadata'yı Doldur", 
+        # Butonlar - İyileştirilmiş layout
+        # İlk satır - Ana aksiyonlar
+        button_row1 = tk.Frame(button_container, bg=THEME['bg_primary'])
+        button_row1.pack(pady=(0, 10))
+        
+        ModernButton(button_row1, "📥 Metadata'yı Doldur", 
                     self.fill_metadata_from_music, 
-                    width=200, height=45, 
+                    width=200, height=48, font_size=11,
                     bg_color=THEME['accent_secondary'],
-                    hover_color=THEME['accent_tertiary']).pack(side=tk.LEFT, padx=10)
+                    hover_color=THEME['accent_tertiary']).pack(side=tk.LEFT, padx=8)
         
-        ModernButton(button_container, "🚀 YÜKLE", 
+        ModernButton(button_row1, "🚀 YÜKLE", 
                     self.start_upload, 
-                    width=220, height=50, font_size=13,
+                    width=240, height=55, font_size=14,
                     bg_color=THEME['accent_primary'],
-                    hover_color=THEME['success']).pack(side=tk.LEFT, padx=10)
+                    hover_color=THEME['success']).pack(side=tk.LEFT, padx=8)
         
-        ModernButton(button_container, "🗑️ Temizle", 
+        ModernButton(button_row1, "📋 Yüklenen Videolar", 
+                    self.show_uploaded_videos, 
+                    width=200, height=48, font_size=11,
+                    bg_color=THEME['accent_tertiary'],
+                    hover_color=THEME['accent_secondary']).pack(side=tk.LEFT, padx=8)
+        
+        # İkinci satır - Yardımcı butonlar
+        button_row2 = tk.Frame(button_container, bg=THEME['bg_primary'])
+        button_row2.pack()
+        
+        ModernButton(button_row2, "🗑️ Temizle", 
                     self.clear_all, 
-                    width=150, height=45,
+                    width=160, height=42, font_size=10,
                     bg_color=THEME['bg_tertiary'],
                     hover_color=THEME['error'],
-                    text_color=THEME['text_secondary']).pack(side=tk.LEFT, padx=10)
+                    text_color=THEME['text_secondary']).pack(side=tk.LEFT, padx=8)
+        
+        ModernButton(button_row2, "⚙️ Ayarlar", 
+                    self.open_platform_settings, 
+                    width=160, height=42, font_size=10,
+                    bg_color=THEME['bg_tertiary'],
+                    hover_color=THEME['accent_primary'],
+                    text_color=THEME['text_secondary']).pack(side=tk.LEFT, padx=8)
         
         # Scroll region güncelleme
         main_frame.update_idletasks()
@@ -668,10 +724,13 @@ class SocialMediaUploaderApp:
             platforms.append("instagram")
         if self.facebook_var.get():
             platforms.append("facebook")
+        # TikTok ve Spotify şimdilik devre dışı
         if self.tiktok_var.get():
-            platforms.append("tiktok")
+            self.root.after(0, lambda: messagebox.showinfo(
+                "Bilgi", "TikTok entegrasyonu şu anda aktif değil.\nAPI credentials gerekli."))
         if self.spotify_var.get():
-            platforms.append("spotify")
+            self.root.after(0, lambda: messagebox.showinfo(
+                "Bilgi", "Spotify entegrasyonu şu anda aktif değil.\nAPI credentials gerekli."))
             
         if not platforms:
             messagebox.showwarning("Uyarı", "Lütfen en az bir platform seçin!")
@@ -1001,17 +1060,29 @@ class SocialMediaUploaderApp:
             # Instagram için caption oluştur
             caption = f"{title}\n\n{description}\n\n{' '.join(['#' + tag.replace(' ', '') for tag in tags])}"
             
+            # Duplicate kontrolü
+            check_duplicate = self.check_duplicate_var.get()
+            if check_duplicate:
+                if self.instagram_uploader.is_content_already_uploaded(title, caption):
+                    self.log(f"[INSTAGRAM] ⚠️ Video zaten yüklenmiş: {title}")
+                    self.root.after(0, lambda: messagebox.showinfo(
+                        "Bilgi", f"Bu video Instagram'da zaten yüklenmiş:\n\n{title}\n\nYükleme atlandı."))
+                    return
+            
             reel_id = self.instagram_uploader.upload_reel(
                 video_file=video_file,
-                caption=caption
+                caption=caption,
+                check_duplicate=False  # Zaten yukarıda kontrol ettik
             )
             
             if reel_id:
-                self.log(f"[INSTAGRAM] Başarılı! Reel ID: {reel_id}")
+                self.log(f"[INSTAGRAM] ✅ Başarılı! Reel ID: {reel_id}")
             else:
-                self.log("[INSTAGRAM] Yükleme başarısız!")
+                self.log("[INSTAGRAM] ❌ Yükleme başarısız!")
         except Exception as e:
-            self.log(f"[INSTAGRAM] Hata: {e}")
+            self.log(f"[INSTAGRAM] ❌ Hata: {e}")
+            import traceback
+            self.log(f"[INSTAGRAM] Traceback: {traceback.format_exc()}")
         
     def upload_to_facebook(self, title, description, tags):
         """Facebook'a yükle"""
@@ -1030,19 +1101,31 @@ class SocialMediaUploaderApp:
             return
         
         try:
+            # Duplicate kontrolü
+            check_duplicate = self.check_duplicate_var.get()
+            if check_duplicate:
+                if self.facebook_uploader.is_video_already_uploaded(title):
+                    self.log(f"[FACEBOOK] ⚠️ Video zaten yüklenmiş: {title}")
+                    self.root.after(0, lambda: messagebox.showinfo(
+                        "Bilgi", f"Bu video Facebook'ta zaten yüklenmiş:\n\n{title}\n\nYükleme atlandı."))
+                    return
+            
             video_id = self.facebook_uploader.upload_video(
                 video_file=video_file,
                 title=title,
                 description=description,
-                privacy="PUBLIC"
+                privacy="PUBLIC",
+                check_duplicate=False  # Zaten yukarıda kontrol ettik
             )
             
             if video_id:
-                self.log(f"[FACEBOOK] Başarılı! Video ID: {video_id}")
+                self.log(f"[FACEBOOK] ✅ Başarılı! Video ID: {video_id}")
             else:
-                self.log("[FACEBOOK] Yükleme başarısız!")
+                self.log("[FACEBOOK] ❌ Yükleme başarısız!")
         except Exception as e:
-            self.log(f"[FACEBOOK] Hata: {e}")
+            self.log(f"[FACEBOOK] ❌ Hata: {e}")
+            import traceback
+            self.log(f"[FACEBOOK] Traceback: {traceback.format_exc()}")
         
     def upload_to_tiktok(self, title, description, tags):
         """TikTok'a yükle"""
@@ -1119,6 +1202,230 @@ class SocialMediaUploaderApp:
         except Exception as e:
             self.log(f"[SPOTIFY] Hata: {e}")
         
+    def show_uploaded_videos(self):
+        """Yüklenen videoları göster"""
+        videos_window = tk.Toplevel(self.root)
+        videos_window.title("📋 Yüklenen Videolar")
+        videos_window.geometry("1000x700")
+        videos_window.configure(bg=THEME['bg_primary'])
+        
+        # Header
+        header = tk.Frame(videos_window, bg=THEME['bg_secondary'], height=60)
+        header.pack(fill=tk.X, padx=0, pady=0)
+        header.pack_propagate(False)
+        
+        title_label = tk.Label(header, text="📋 Yüklenen Videolar", 
+                              bg=THEME['bg_secondary'], fg=THEME['accent_primary'],
+                              font=('Segoe UI', 16, 'bold'))
+        title_label.pack(pady=15)
+        
+        # Notebook (tabs)
+        notebook = ttk.Notebook(videos_window)
+        notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Tab frames - saklamak için
+        frames = {}
+        platforms = ["youtube", "instagram", "facebook"]
+        platform_names = ["▶️ YouTube", "📷 Instagram", "👥 Facebook"]
+        
+        for platform, name in zip(platforms, platform_names):
+            frame = tk.Frame(notebook, bg=THEME['bg_primary'])
+            notebook.add(frame, text=name)
+            frames[platform] = frame
+            self.create_videos_list(frame, platform)
+        
+        # Refresh button
+        refresh_frame = tk.Frame(videos_window, bg=THEME['bg_primary'])
+        refresh_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
+        
+        def refresh_all():
+            """Tüm tab'ları yenile"""
+            for platform, frame in frames.items():
+                # Frame'i temizle
+                for widget in frame.winfo_children():
+                    widget.destroy()
+                # Yeniden yükle
+                self.create_videos_list(frame, platform)
+        
+        ModernButton(refresh_frame, "🔄 Yenile", 
+                    refresh_all,
+                    width=150, height=40,
+                    bg_color=THEME['accent_primary'],
+                    hover_color=THEME['success']).pack(side=tk.RIGHT, padx=10)
+    
+    def create_videos_list(self, parent, platform):
+        """Videoları listeleyen widget oluştur"""
+        # Scrollable frame
+        canvas = tk.Canvas(parent, bg=THEME['bg_primary'], highlightthickness=0)
+        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=THEME['bg_primary'])
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Platform'a göre videoları yükle
+        threading.Thread(target=lambda: self.load_videos_for_platform(scrollable_frame, platform, canvas), daemon=True).start()
+        
+        # Mouse wheel binding
+        def on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        canvas.bind_all("<MouseWheel>", on_mousewheel)
+    
+    def load_videos_for_platform(self, parent, platform, canvas):
+        """Platform için videoları yükle ve göster"""
+        try:
+            videos = []
+            
+            if platform == "youtube":
+                if not self.youtube_service:
+                    self.root.after(0, lambda: self.show_no_connection(parent, "YouTube API'ye bağlı değil!"))
+                    return
+                from youtube_upload import get_uploaded_videos
+                videos = get_uploaded_videos(self.youtube_service, max_results=100)
+                
+            elif platform == "instagram":
+                if not self.instagram_uploader:
+                    self.root.after(0, lambda: self.show_no_connection(parent, "Instagram API credentials gerekli!"))
+                    return
+                videos = self.instagram_uploader.get_uploaded_content(max_results=100)
+                
+            elif platform == "facebook":
+                if not self.facebook_uploader:
+                    self.root.after(0, lambda: self.show_no_connection(parent, "Facebook API credentials gerekli!"))
+                    return
+                videos = self.facebook_uploader.get_uploaded_videos(max_results=100)
+            
+            if not videos:
+                self.root.after(0, lambda: self.show_no_videos(parent, platform))
+                return
+            
+            # Videoları göster
+            self.root.after(0, lambda: self.display_videos(parent, videos, platform, canvas))
+            
+        except Exception as e:
+            self.root.after(0, lambda: self.show_error(parent, f"Hata: {e}"))
+    
+    def show_no_connection(self, parent, message):
+        """Bağlantı yok mesajı"""
+        label = tk.Label(parent, text=f"⚠️ {message}", 
+                        bg=THEME['bg_primary'], fg=THEME['warning'],
+                        font=('Segoe UI', 12))
+        label.pack(pady=50)
+    
+    def show_no_videos(self, parent, platform):
+        """Video yok mesajı"""
+        label = tk.Label(parent, text=f"📭 {platform.upper()} kanalında henüz video yok", 
+                        bg=THEME['bg_primary'], fg=THEME['text_muted'],
+                        font=('Segoe UI', 12))
+        label.pack(pady=50)
+    
+    def show_error(self, parent, message):
+        """Hata mesajı"""
+        label = tk.Label(parent, text=f"❌ {message}", 
+                        bg=THEME['bg_primary'], fg=THEME['error'],
+                        font=('Segoe UI', 12))
+        label.pack(pady=50)
+    
+    def display_videos(self, parent, videos, platform, canvas):
+        """Videoları listele - İyileştirilmiş görünüm"""
+        # Başlık
+        count_label = tk.Label(parent, text=f"📊 Toplam {len(videos)} video bulundu", 
+                              bg=THEME['bg_primary'], fg=THEME['text_secondary'],
+                              font=('Segoe UI', 10))
+        count_label.pack(anchor=tk.W, padx=15, pady=(10, 5))
+        
+        for i, video in enumerate(videos):
+            # Video card - Daha modern görünüm
+            card = tk.Frame(parent, bg=THEME['bg_secondary'], relief='flat', bd=0,
+                          highlightbackground=THEME['accent_primary'], highlightthickness=2)
+            card.pack(fill=tk.X, padx=15, pady=8)
+            
+            # Hover efekti için
+            def on_card_enter(e, c=card):
+                c.config(highlightbackground=THEME['accent_secondary'])
+            def on_card_leave(e, c=card):
+                c.config(highlightbackground=THEME['accent_primary'])
+            card.bind('<Enter>', on_card_enter)
+            card.bind('<Leave>', on_card_leave)
+            
+            # Video bilgileri
+            info_frame = tk.Frame(card, bg=THEME['bg_secondary'])
+            info_frame.pack(fill=tk.X, padx=15, pady=12)
+            
+            # Başlık - Daha büyük ve vurgulu
+            title_text = video.get('title', 'Başlıksız')
+            if len(title_text) > 70:
+                title_text = title_text[:70] + '...'
+            
+            title_label = tk.Label(info_frame, text=title_text,
+                                  bg=THEME['bg_secondary'], fg=THEME['text_primary'],
+                                  font=('Segoe UI', 12, 'bold'), anchor='w', justify='left',
+                                  wraplength=700)
+            title_label.pack(fill=tk.X, pady=(0, 8))
+            
+            # Tarih ve ID - Daha düzenli
+            date_text = video.get('published_at', video.get('created_time', video.get('timestamp', '')))
+            if date_text:
+                try:
+                    from datetime import datetime
+                    if 'T' in date_text:
+                        date_obj = datetime.fromisoformat(date_text.replace('Z', '+00:00'))
+                        date_text = date_obj.strftime('%d.%m.%Y %H:%M')
+                except:
+                    pass
+            
+            meta_frame = tk.Frame(info_frame, bg=THEME['bg_secondary'])
+            meta_frame.pack(fill=tk.X, pady=(0, 5))
+            
+            # Platform ikonu
+            platform_icons = {
+                'youtube': '▶️',
+                'instagram': '📷',
+                'facebook': '👥'
+            }
+            icon = platform_icons.get(platform, '📹')
+            
+            tk.Label(meta_frame, text=f"{icon} {platform.upper()}", 
+                    bg=THEME['bg_secondary'], fg=THEME['accent_primary'],
+                    font=('Segoe UI', 9, 'bold')).pack(side=tk.LEFT, padx=(0, 20))
+            
+            tk.Label(meta_frame, text=f"📅 {date_text}", 
+                    bg=THEME['bg_secondary'], fg=THEME['text_muted'],
+                    font=('Segoe UI', 9)).pack(side=tk.LEFT, padx=(0, 15))
+            
+            video_id = video.get('id', '')
+            if video_id:
+                id_text = video_id[:25] + '...' if len(video_id) > 25 else video_id
+                tk.Label(meta_frame, text=f"🆔 {id_text}", 
+                        bg=THEME['bg_secondary'], fg=THEME['text_muted'],
+                        font=('Consolas', 8)).pack(side=tk.LEFT)
+            
+            # URL butonu - Daha büyük ve görünür
+            url = video.get('url', '')
+            if url:
+                def open_url(u=url):
+                    import webbrowser
+                    webbrowser.open(u)
+                
+                url_btn = ModernButton(meta_frame, "🔗 Tarayıcıda Aç", open_url,
+                                     width=140, height=32,
+                                     bg_color=THEME['accent_primary'],
+                                     hover_color=THEME['success'],
+                                     font_size=9)
+                url_btn.pack(side=tk.RIGHT, padx=5)
+        
+        canvas.update_idletasks()
+        canvas.configure(scrollregion=canvas.bbox("all"))
+    
+    
     def clear_all(self):
         """Tüm alanları temizle"""
         self.selected_music_file = None
